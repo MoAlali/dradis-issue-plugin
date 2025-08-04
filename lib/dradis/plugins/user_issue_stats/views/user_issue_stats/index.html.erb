@@ -1,14 +1,300 @@
-<h2>User Issue Stats</h2>
+<div class="container">
+  <h2>User Issue Stats Dashboard</h2>
 
-<form method="get">
-  <label>Date Range:</label>
-  <input type="date" name="from" />
-  <input type="date" name="to" />
-  <button type="submit">Filter</button>
-</form>
+  <!-- Date Range Filter -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Filter by Date Range</h5>
+      <% if params[:from].present? && params[:to].present? %>
+        <div class="alert alert-info mt-2 mb-0">
+          <i class="fas fa-filter"></i> <strong>Active Filter:</strong> 
+          Showing issues from <strong><%= params[:from] %></strong> to <strong><%= params[:to] %></strong>
+        </div>
+      <% else %>
+        <div class="alert alert-secondary mt-2 mb-0">
+          <i class="fas fa-info-circle"></i> Showing <strong>all issues</strong> from all time periods
+        </div>
+      <% end %>
+    </div>
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-4">
+          <label for="from" class="form-label">From Date:</label>
+          <input type="date" class="form-control" id="from" name="from" value="<%= params[:from] %>" />
+        </div>
+        <div class="col-md-4">
+          <label for="to" class="form-label">To Date:</label>
+          <input type="date" class="form-control" id="to" name="to" value="<%= params[:to] %>" />
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">&nbsp;</label>
+          <div>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-search"></i> Apply Filter
+            </button>
+            <a href="<%= request.path %>" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Clear Filter
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
 
-<ul>
-  <li><strong>Total Issues:</strong> <%= @total %></li>
-  <li><strong>High Severity:</strong> <%= @high_count %></li>
-  <li><strong>Critical Severity:</strong> <%= @critical_count %></li>
-</ul>
+  <!-- Issue Statistics -->
+  <div class="row">
+    <!-- Total Issues -->
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">
+            Total Issues
+            <% if params[:from].present? && params[:to].present? %>
+              <br><small class="text-muted">(Filtered)</small>
+            <% end %>
+          </h5>
+          <h2 class="text-primary"><%= @total %></h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Critical Issues -->
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">
+            Critical
+            <% if params[:from].present? && params[:to].present? %>
+              <br><small class="text-muted">(Filtered)</small>
+            <% end %>
+          </h5>
+          <h2 class="text-danger"><%= @critical_count %></h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- High Issues -->
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">
+            High
+            <% if params[:from].present? && params[:to].present? %>
+              <br><small class="text-muted">(Filtered)</small>
+            <% end %>
+          </h5>
+          <h2 class="text-warning"><%= @high_count %></h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medium Issues -->
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">
+            Medium
+            <% if params[:from].present? && params[:to].present? %>
+              <br><small class="text-muted">(Filtered)</small>
+            <% end %>
+          </h5>
+          <h2 class="text-info"><%= @medium_count %></h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Additional Severity Counts -->
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">
+            Low
+            <% if params[:from].present? && params[:to].present? %>
+              <br><small class="text-muted">(Filtered)</small>
+            <% end %>
+          </h5>
+          <h2 class="text-success"><%= @low_count %></h2>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h5 class="card-title">
+            Info
+            <% if params[:from].present? && params[:to].present? %>
+              <br><small class="text-muted">(Filtered)</small>
+            <% end %>
+          </h5>
+          <h2 class="text-secondary"><%= @info_count %></h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue Status Breakdown -->
+  <% if @status_counts.any? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Issue Status Breakdown
+        <% if params[:from].present? && params[:to].present? %>
+          <small class="text-muted">(Filtered: <%= params[:from] %> to <%= params[:to] %>)</small>
+        <% else %>
+          <small class="text-muted">(All Time)</small>
+        <% end %>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <% @status_counts.each do |status, count| %>
+        <div class="col-md-4 mb-2">
+          <div class="d-flex justify-content-between">
+            <span><%= status %>:</span>
+            <strong><%= count %></strong>
+          </div>
+        </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <% end %>
+
+  <!-- Per-User Issue Statistics Across All Projects -->
+  <% if @user_stats.any? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Issues by User (All Projects)
+        <% if params[:from].present? && params[:to].present? %>
+          (Filtered: <%= params[:from] %> to <%= params[:to] %>)
+        <% end %>
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Projects</th>
+              <th>Total</th>
+              <th class="text-danger">Critical</th>
+              <th class="text-warning">High</th>
+              <th class="text-info">Medium</th>
+              <th class="text-success">Low</th>
+              <th class="text-secondary">Info</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @user_stats.each_with_index do |(user, stats), index| %>
+            <tr>
+              <td><strong><%= user %></strong></td>
+              <td>
+                <small class="text-muted">
+                  <%= stats[:projects].join(', ') %>
+                </small>
+              </td>
+              <td><span class="badge bg-primary"><%= stats[:total] %></span></td>
+              <td>
+                <% if stats[:critical] > 0 %>
+                  <span class="badge bg-danger"><%= stats[:critical] %></span>
+                <% else %>
+                  <span class="text-muted">0</span>
+                <% end %>
+              </td>
+              <td>
+                <% if stats[:high] > 0 %>
+                  <span class="badge bg-warning"><%= stats[:high] %></span>
+                <% else %>
+                  <span class="text-muted">0</span>
+                <% end %>
+              </td>
+              <td>
+                <% if stats[:medium] > 0 %>
+                  <span class="badge bg-info"><%= stats[:medium] %></span>
+                <% else %>
+                  <span class="text-muted">0</span>
+                <% end %>
+              </td>
+              <td>
+                <% if stats[:low] > 0 %>
+                  <span class="badge bg-success"><%= stats[:low] %></span>
+                <% else %>
+                  <span class="text-muted">0</span>
+                <% end %>
+              </td>
+              <td>
+                <% if stats[:info] > 0 %>
+                  <span class="badge bg-secondary"><%= stats[:info] %></span>
+                <% else %>
+                  <span class="text-muted">0</span>
+                <% end %>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#details-<%= index %>" aria-expanded="false">
+                  View Projects
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="9" class="p-0">
+                <div class="collapse" id="details-<%= index %>">
+                  <div class="card card-body m-2">
+                    <h6>Project Breakdown for <%= user %>:</h6>
+                    <div class="table-responsive">
+                      <table class="table table-sm">
+                        <thead>
+                          <tr>
+                            <th>Project</th>
+                            <th>Total</th>
+                            <th class="text-danger">Critical</th>
+                            <th class="text-warning">High</th>
+                            <th class="text-info">Medium</th>
+                            <th class="text-success">Low</th>
+                            <th class="text-secondary">Info</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% if @user_project_details[user] %>
+                            <% @user_project_details[user].each do |project, project_stats| %>
+                            <tr>
+                              <td><strong><%= project %></strong></td>
+                              <td><%= project_stats[:total] %></td>
+                              <td><%= project_stats[:critical] %></td>
+                              <td><%= project_stats[:high] %></td>
+                              <td><%= project_stats[:medium] %></td>
+                              <td><%= project_stats[:low] %></td>
+                              <td><%= project_stats[:info] %></td>
+                            </tr>
+                            <% end %>
+                          <% end %>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% end %>
+
+  <!-- Summary -->
+  <div class="mt-4">
+    <small class="text-muted">
+      <% if params[:from].present? && params[:to].present? %>
+        Showing issues from <%= params[:from] %> to <%= params[:to] %>
+      <% else %>
+        Showing all issues
+      <% end %>
+      | Last updated: <%= Time.current.strftime("%Y-%m-%d %H:%M") %>
+    </small>
+  </div>
+</div>

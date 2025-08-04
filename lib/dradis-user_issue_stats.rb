@@ -1,9 +1,5 @@
-# Hook to the framework base clases
+# Hook to the framework base classes
 require 'dradis-plugins'
-
-# Load supporting classes
-require 'rails_autolink'
-require 'redcloth'
 
 # Load this add-on's engine
 require 'dradis/plugins/user_issue_stats'
