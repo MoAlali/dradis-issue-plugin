@@ -1,0 +1,14 @@
+<h2>User Issue Stats</h2>
+
+<form method="get">
+  <label>Date Range:</label>
+  <input type="date" name="from" />
+  <input type="date" name="to" />
+  <button type="submit">Filter</button>
+</form>
+
+<ul>
+  <li><strong>Total Issues:</strong> <%= @total %></li>
+  <li><strong>High Severity:</strong> <%= @high_count %></li>
+  <li><strong>Critical Severity:</strong> <%= @critical_count %></li>
+</ul>
