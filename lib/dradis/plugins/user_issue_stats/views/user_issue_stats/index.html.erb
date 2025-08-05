@@ -35,6 +35,9 @@
             <a href="<%= request.path %>" class="btn btn-secondary">
               <i class="fas fa-times"></i> Clear Filter
             </a>
+            <button type="button" id="refresh-stats" class="btn btn-info">
+              <i class="fas fa-sync-alt"></i> Refresh Stats
+            </button>
           </div>
         </div>
       </form>
@@ -53,7 +56,7 @@
               <br><small class="text-muted">(Filtered)</small>
             <% end %>
           </h5>
-          <h2 class="text-primary"><%= @total %></h2>
+          <h2 class="text-primary"><span id="total-badge"><%= @total %></span></h2>
         </div>
       </div>
     </div>
@@ -68,7 +71,7 @@
               <br><small class="text-muted">(Filtered)</small>
             <% end %>
           </h5>
-          <h2 class="text-danger"><%= @critical_count %></h2>
+          <h2 class="text-danger"><span id="critical-badge"><%= @critical_count %></span></h2>
         </div>
       </div>
     </div>
@@ -83,7 +86,7 @@
               <br><small class="text-muted">(Filtered)</small>
             <% end %>
           </h5>
-          <h2 class="text-warning"><%= @high_count %></h2>
+          <h2 class="text-warning"><span id="high-badge"><%= @high_count %></span></h2>
         </div>
       </div>
     </div>
@@ -98,7 +101,7 @@
               <br><small class="text-muted">(Filtered)</small>
             <% end %>
           </h5>
-          <h2 class="text-info"><%= @medium_count %></h2>
+          <h2 class="text-info"><span id="medium-badge"><%= @medium_count %></span></h2>
         </div>
       </div>
     </div>
@@ -115,7 +118,7 @@
               <br><small class="text-muted">(Filtered)</small>
             <% end %>
           </h5>
-          <h2 class="text-success"><%= @low_count %></h2>
+          <h2 class="text-success"><span id="low-badge"><%= @low_count %></span></h2>
         </div>
       </div>
     </div>
@@ -129,7 +132,7 @@
               <br><small class="text-muted">(Filtered)</small>
             <% end %>
           </h5>
-          <h2 class="text-secondary"><%= @info_count %></h2>
+          <h2 class="text-secondary"><span id="info-badge"><%= @info_count %></span></h2>
         </div>
       </div>
     </div>
@@ -298,3 +301,187 @@
     </small>
   </div>
 </div>
+
+<!-- JavaScript for enhanced UI functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-refresh functionality
+  const refreshButton = document.getElementById('refresh-stats');
+  if (refreshButton) {
+    refreshButton.addEventListener('click', function(e) {
+      e.preventDefault();
+      refreshStats();
+    });
+  }
+  
+  // Live stats update function
+  function refreshStats() {
+    const fromDate = document.getElementById('from')?.value;
+    const toDate = document.getElementById('to')?.value;
+    
+    let url = '<%= main_app.root_path %>stats/api/stats';
+    const params = new URLSearchParams();
+    
+    if (fromDate) params.append('from', fromDate);
+    if (toDate) params.append('to', toDate);
+    
+    if (params.toString()) {
+      url += '?' + params.toString();
+    }
+    
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        showAlert('Error loading stats: ' + data.error, 'danger');
+      } else {
+        updateStatsDisplay(data);
+        showAlert('Statistics updated successfully!', 'success');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showAlert('Failed to refresh statistics', 'danger');
+    });
+  }
+  
+  // Update stats display with new data
+  function updateStatsDisplay(data) {
+    // Update badge numbers
+    updateBadge('total-badge', data.total);
+    updateBadge('critical-badge', data.critical);
+    updateBadge('high-badge', data.high);
+    updateBadge('medium-badge', data.medium);
+    updateBadge('low-badge', data.low);
+    updateBadge('info-badge', data.info);
+    
+    // Update timestamp
+    const timestamp = document.querySelector('.text-muted small');
+    if (timestamp) {
+      timestamp.innerHTML = timestamp.innerHTML.replace(
+        /Last updated: [\d\-\s:]+/, 
+        'Last updated: ' + new Date().toISOString().slice(0, 16).replace('T', ' ')
+      );
+    }
+  }
+  
+  // Helper function to update badge values
+  function updateBadge(id, value) {
+    const badge = document.getElementById(id);
+    if (badge) {
+      badge.textContent = value;
+      // Add animation effect
+      badge.classList.add('badge-updated');
+      setTimeout(() => badge.classList.remove('badge-updated'), 1000);
+    }
+  }
+  
+  // Helper function to show alerts
+  function showAlert(message, type) {
+    const alertHtml = `
+      <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+    
+    const container = document.querySelector('.container');
+    if (container && container.firstElementChild) {
+      container.insertAdjacentHTML('afterbegin', alertHtml);
+      
+      // Auto-dismiss success alerts after 3 seconds
+      if (type === 'success') {
+        setTimeout(() => {
+          const alert = container.querySelector('.alert-success');
+          if (alert) alert.remove();
+        }, 3000);
+      }
+    }
+  }
+  
+  // Add expandable rows functionality
+  document.querySelectorAll('.expand-toggle').forEach(button => {
+    button.addEventListener('click', function() {
+      const target = document.querySelector(this.getAttribute('data-bs-target'));
+      const icon = this.querySelector('i');
+      
+      if (target) {
+        if (target.classList.contains('show')) {
+          icon.classList.remove('fa-chevron-up');
+          icon.classList.add('fa-chevron-down');
+        } else {
+          icon.classList.remove('fa-chevron-down');
+          icon.classList.add('fa-chevron-up');
+        }
+      }
+    });
+  });
+  
+  // Add keyboard shortcuts
+  document.addEventListener('keydown', function(e) {
+    // Ctrl+R or F5 for refresh
+    if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+      e.preventDefault();
+      refreshStats();
+    }
+  });
+});
+</script>
+
+<!-- Enhanced CSS for better animations -->
+<style>
+.badge-updated {
+  animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.expand-toggle {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.expand-toggle:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+.card {
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Loading state for refresh button */
+.btn.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.btn.loading::after {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

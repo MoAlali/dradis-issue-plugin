@@ -1,6 +1,7 @@
 module Dradis
-  module UserIssueStats
-    class UserIssueStatsController < ApplicationController
+  module Plugins
+    module UserIssueStats
+      class UserIssueStatsController < ApplicationController
         # Add security checks
         before_action :authenticate_user!
         before_action :check_read_permissions
@@ -120,6 +121,94 @@ module Dradis
           Rails.logger.error "UserIssueStats Error: #{e.message}"
           flash[:error] = "Unable to load statistics. Please try again."
           redirect_to root_path
+        end
+        
+        # API endpoint for JSON stats (for AJAX updates)
+        def api_stats
+          begin
+            @accessible_projects = get_user_accessible_projects
+            @issues = get_accessible_issues
+            
+            # Apply date range filter if provided
+            if params[:from].present? && params[:to].present?
+              from_date = Date.parse(params[:from])
+              to_date = Date.parse(params[:to])
+              @issues = @issues.where(created_at: from_date.beginning_of_day..to_date.end_of_day)
+            end
+            
+            stats = {
+              total: @issues.count,
+              critical: count_issues_by_severity(@issues, 'Critical'),
+              high: count_issues_by_severity(@issues, 'High'),
+              medium: count_issues_by_severity(@issues, 'Medium'),
+              low: count_issues_by_severity(@issues, 'Low'),
+              info: count_issues_by_severity(@issues, 'Info'),
+              projects: @accessible_projects.count
+            }
+            
+            render json: stats
+          rescue => e
+            Rails.logger.error "API Stats Error: #{e.message}"
+            render json: { error: 'Unable to load statistics' }, status: 500
+          end
+        end
+        
+        # API endpoint for specific user stats
+        def user_stats
+          begin
+            user_id = params[:user_id]
+            @accessible_projects = get_user_accessible_projects
+            @issues = get_accessible_issues
+            
+            # Filter issues by user (simplified - you may need to adapt based on your user system)
+            user_issues = @issues.select { |issue| get_issue_author(issue) == user_id }
+            
+            stats = {
+              user: user_id,
+              total: user_issues.count,
+              critical: user_issues.select { |i| issue_has_severity?(i, 'Critical') }.count,
+              high: user_issues.select { |i| issue_has_severity?(i, 'High') }.count,
+              medium: user_issues.select { |i| issue_has_severity?(i, 'Medium') }.count,
+              low: user_issues.select { |i| issue_has_severity?(i, 'Low') }.count,
+              info: user_issues.select { |i| issue_has_severity?(i, 'Info') }.count
+            }
+            
+            render json: stats
+          rescue => e
+            Rails.logger.error "User Stats Error: #{e.message}"
+            render json: { error: 'Unable to load user statistics' }, status: 500
+          end
+        end
+        
+        # API endpoint for specific project stats
+        def project_stats
+          begin
+            project_id = params[:project_id].to_i
+            @accessible_projects = get_user_accessible_projects
+            
+            # Check if user has access to this project
+            unless @accessible_projects.map(&:id).include?(project_id)
+              render json: { error: 'Access denied' }, status: 403
+              return
+            end
+            
+            project_issues = Issue.joins(:node).where(nodes: { project_id: project_id })
+            
+            stats = {
+              project_id: project_id,
+              total: project_issues.count,
+              critical: count_issues_by_severity(project_issues, 'Critical'),
+              high: count_issues_by_severity(project_issues, 'High'),
+              medium: count_issues_by_severity(project_issues, 'Medium'),
+              low: count_issues_by_severity(project_issues, 'Low'),
+              info: count_issues_by_severity(project_issues, 'Info')
+            }
+            
+            render json: stats
+          rescue => e
+            Rails.logger.error "Project Stats Error: #{e.message}"
+            render json: { error: 'Unable to load project statistics' }, status: 500
+          end
         end
         
         private
@@ -281,3 +370,4 @@ module Dradis
       end
     end
   end
+end
