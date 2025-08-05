@@ -1,7 +1,6 @@
 module Dradis
-  module Plugins
-    module UserIssueStats
-      class UserIssueStatsController < ApplicationController
+  module UserIssueStats
+    class UserIssueStatsController < ApplicationController
         # Add security checks
         before_action :authenticate_user!
         before_action :check_read_permissions
@@ -282,4 +281,3 @@ module Dradis
       end
     end
   end
-end

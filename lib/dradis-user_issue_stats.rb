@@ -2,4 +2,4 @@
 require 'dradis-plugins'
 
 # Load this add-on's engine
-require 'dradis/plugins/user_issue_stats'
+require 'dradis/user_issue_stats/engine'
