@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.version     = Dradis::Plugins::UserIssueStats::VERSION
   spec.summary     = "Dradis plugin: User Issue Stats Dashboard"
   spec.description = "A Dradis Framework plugin that provides comprehensive issue statistics and status tracking capabilities"
-  spec.files       = Dir["lib/**/*", "config/**/*"]
+  spec.files       = Dir["lib/**/*", "config/**/*", "init.rb"]
   spec.require_paths = ["lib"]
   spec.authors     = ['Daniel Martin']
   spec.email       = ['daniel@example.com']
